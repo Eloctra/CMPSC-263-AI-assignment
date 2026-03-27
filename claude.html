@@ -1,0 +1,1148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🐍 Snakey Snake!</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700;800&display=swap');
+
+  :root {
+    --sky: #fff8e7;
+    --pink: #ff6eb4;
+    --yellow: #ffe347;
+    --green: #5dda5d;
+    --blue: #4dc8ff;
+    --orange: #ff8c42;
+    --purple: #c97fff;
+    --red: #ff4f4f;
+    --white: #ffffff;
+    --outline: #3a2a1a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--sky);
+    background-image:
+      radial-gradient(circle at 15% 20%, #ffe0f0 0%, transparent 35%),
+      radial-gradient(circle at 85% 80%, #e0f4ff 0%, transparent 35%),
+      radial-gradient(circle at 50% 50%, #fffbe0 0%, transparent 60%);
+    font-family: 'Nunito', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='10' fill='%23ff6eb4' stroke='%233a2a1a' stroke-width='2'/%3E%3Ccircle cx='12' cy='13' r='2' fill='%233a2a1a'/%3E%3Ccircle cx='20' cy='13' r='2' fill='%233a2a1a'/%3E%3Cpath d='M11 20 Q16 25 21 20' stroke='%233a2a1a' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") 16 16, auto;
+  }
+
+  /* Floating stars background */
+  body::before {
+    content: '⭐ 🌈 ⭐ 💫 🌟 ✨ 💫 🌟';
+    position: fixed;
+    top: 10px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 1.4rem;
+    letter-spacing: 20px;
+    animation: floatStars 4s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.5;
+  }
+
+  body::after {
+    content: '🦋 🌸 🍭 🌸 🦋 🍬 🌸 🍭';
+    position: fixed;
+    bottom: 10px;
+    left: 0; right: 0;
+    text-align: center;
+    font-size: 1.2rem;
+    letter-spacing: 16px;
+    animation: floatStars 5s ease-in-out infinite reverse;
+    pointer-events: none;
+    opacity: 0.45;
+  }
+
+  @keyframes floatStars {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2.5rem, 7vw, 4.5rem);
+    color: var(--white);
+    -webkit-text-stroke: 3px var(--outline);
+    paint-order: stroke fill;
+    text-shadow:
+      4px 4px 0 var(--pink),
+      8px 8px 0 rgba(0,0,0,0.1);
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+    animation: wobble 2s ease-in-out infinite;
+    position: relative;
+  }
+
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-2deg) scale(1); }
+    50% { transform: rotate(2deg) scale(1.04); }
+  }
+
+  .subtitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--purple);
+    -webkit-text-stroke: 1px var(--outline);
+    letter-spacing: 0.1em;
+    margin-bottom: 14px;
+    animation: bounce 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes bounce {
+    from { transform: translateY(0); }
+    to { transform: translateY(-5px); }
+  }
+
+  /* HUD */
+  .hud {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .hud-item {
+    background: var(--white);
+    border: 3px solid var(--outline);
+    border-radius: 20px;
+    padding: 6px 18px;
+    box-shadow: 4px 4px 0 var(--outline);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    transition: transform 0.1s;
+  }
+
+  .hud-item:nth-child(1) { background: #fff0f8; }
+  .hud-item:nth-child(2) { background: #f0fff4; }
+  .hud-item:nth-child(3) { background: #fffbe0; }
+
+  .hud-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.6rem;
+    color: #888;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .hud-value {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--outline);
+    line-height: 1.1;
+    transition: transform 0.15s, color 0.15s;
+  }
+
+  .hud-value.pop {
+    transform: scale(1.5) rotate(-5deg);
+    color: var(--pink);
+  }
+
+  .hud-item.pop-card {
+    transform: scale(1.12) rotate(-3deg);
+  }
+
+  /* Arena */
+  .arena {
+    position: relative;
+    border: 5px solid var(--outline);
+    border-radius: 18px;
+    box-shadow:
+      6px 6px 0 var(--outline),
+      0 0 0 3px var(--white),
+      0 0 0 6px var(--outline);
+    overflow: hidden;
+    background: #f0fff0;
+  }
+
+  canvas {
+    display: block;
+    border-radius: 12px;
+  }
+
+  /* Overlays */
+  .overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    border-radius: 12px;
+    background: rgba(255,248,230,0.95);
+  }
+
+  .overlay.hidden { display: none; }
+
+  .overlay-emoji {
+    font-size: 4rem;
+    animation: spinPop 0.6s ease-out;
+  }
+
+  @keyframes spinPop {
+    from { transform: scale(0) rotate(-180deg); }
+    to { transform: scale(1) rotate(0deg); }
+  }
+
+  .overlay-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.4rem;
+    color: var(--white);
+    -webkit-text-stroke: 3px var(--outline);
+    paint-order: stroke fill;
+    text-shadow: 4px 4px 0 var(--pink);
+    text-align: center;
+  }
+
+  .overlay-title.danger {
+    text-shadow: 4px 4px 0 var(--red);
+    animation: sadShake 0.5s ease;
+  }
+
+  @keyframes sadShake {
+    0%,100% { transform: translateX(0) rotate(0); }
+    20% { transform: translateX(-8px) rotate(-3deg); }
+    40% { transform: translateX(8px) rotate(3deg); }
+    60% { transform: translateX(-6px) rotate(-2deg); }
+    80% { transform: translateX(6px) rotate(2deg); }
+  }
+
+  .overlay-sub {
+    font-size: 0.9rem;
+    color: #666;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.8;
+    background: white;
+    border: 2px solid var(--outline);
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 3px 3px 0 var(--outline);
+  }
+
+  .btn {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    padding: 12px 32px;
+    border: 3px solid var(--outline);
+    border-radius: 50px;
+    background: var(--yellow);
+    color: var(--outline);
+    cursor: pointer;
+    box-shadow: 4px 4px 0 var(--outline);
+    transition: all 0.1s;
+    text-transform: uppercase;
+  }
+
+  .btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0 var(--outline);
+    background: var(--green);
+    color: white;
+    -webkit-text-stroke: 1px var(--outline);
+  }
+
+  .btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--outline);
+  }
+
+  .btn.danger-btn { background: var(--red); color: white; -webkit-text-stroke: 1px var(--outline); }
+
+  .final-score {
+    font-family: 'Fredoka One', cursive;
+    font-size: 4rem;
+    color: var(--white);
+    -webkit-text-stroke: 3px var(--outline);
+    text-shadow: 5px 5px 0 var(--orange);
+    animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+
+  .new-best {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--white);
+    -webkit-text-stroke: 1.5px var(--outline);
+    background: var(--yellow);
+    border: 2px solid var(--outline);
+    border-radius: 20px;
+    padding: 4px 16px;
+    box-shadow: 3px 3px 0 var(--outline);
+    animation: rainbow 1s linear infinite;
+  }
+
+  @keyframes rainbow {
+    0%   { background: #ff6eb4; }
+    16%  { background: #ff8c42; }
+    33%  { background: #ffe347; }
+    50%  { background: #5dda5d; }
+    66%  { background: #4dc8ff; }
+    83%  { background: #c97fff; }
+    100% { background: #ff6eb4; }
+  }
+
+  .controls-hint {
+    margin-top: 10px;
+    font-size: 0.72rem;
+    color: #aaa;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+
+  /* Confetti canvas — full screen overlay */
+  #confettiCanvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 999;
+    display: none;
+  }
+
+  /* Milestone banner */
+  #milestoneBanner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 1000;
+    background: white;
+    border: 4px solid var(--outline);
+    border-radius: 24px;
+    box-shadow: 8px 8px 0 var(--outline);
+    padding: 18px 36px;
+    text-align: center;
+    pointer-events: none;
+    transition: transform 0.35s cubic-bezier(0.175,0.885,0.32,1.4);
+  }
+
+  #milestoneBanner.show {
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  #milestoneBanner .banner-emoji {
+    font-size: 3rem;
+    display: block;
+    animation: spinPop 0.5s ease-out;
+  }
+
+  #milestoneBanner .banner-text {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6rem;
+    color: var(--outline);
+    display: block;
+    margin-top: 4px;
+  }
+
+  #milestoneBanner .banner-sub {
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #888;
+    display: block;
+  }
+
+  /* Apple counter pill in HUD */
+  .hud-item:nth-child(4) { background: #fff4e0; }
+
+  /* ── Take-a-break screen ──────────────────────────────── */
+  #breakScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
+    background: linear-gradient(135deg, #fff0f8 0%, #fffbe0 50%, #f0fff4 100%);
+  }
+
+  #breakScreen.show { display: flex; }
+
+  .break-clouds {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .cloud {
+    position: absolute;
+    font-size: 3rem;
+    opacity: 0.25;
+    animation: driftCloud linear infinite;
+  }
+
+  @keyframes driftCloud {
+    from { transform: translateX(-120px); }
+    to   { transform: translateX(calc(100vw + 120px)); }
+  }
+
+  .break-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 6vw, 3.5rem);
+    color: var(--white);
+    -webkit-text-stroke: 3px var(--outline);
+    paint-order: stroke fill;
+    text-shadow: 5px 5px 0 var(--blue);
+    text-align: center;
+    animation: wobble 3s ease-in-out infinite;
+  }
+
+  .break-emoji-row {
+    font-size: 3rem;
+    letter-spacing: 12px;
+    animation: bounce 1.2s ease-in-out infinite alternate;
+  }
+
+  .break-card {
+    background: white;
+    border: 3px solid var(--outline);
+    border-radius: 20px;
+    box-shadow: 5px 5px 0 var(--outline);
+    padding: 16px 28px;
+    text-align: center;
+    max-width: 320px;
+  }
+
+  .break-card p {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #555;
+    line-height: 1.8;
+  }
+
+  .break-timer-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .break-timer-label {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.75rem;
+    color: #aaa;
+    letter-spacing: 0.1em;
+  }
+
+  #breakCountdown {
+    font-family: 'Fredoka One', cursive;
+    font-size: 3.5rem;
+    color: var(--outline);
+    line-height: 1;
+    min-width: 3ch;
+    text-align: center;
+    transition: transform 0.2s;
+  }
+
+  #breakCountdown.tick { transform: scale(1.25); color: var(--pink); }
+
+  .break-progress {
+    width: 200px;
+    height: 14px;
+    background: #eee;
+    border: 2px solid var(--outline);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 2px 2px 0 var(--outline);
+  }
+
+  #breakProgressBar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--purple));
+    border-radius: 20px;
+    transition: width 1s linear;
+    width: 100%;
+  }
+
+  .break-session-info {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.72rem;
+    color: #bbb;
+    letter-spacing: 0.08em;
+  }
+
+  .btn-break-skip {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.85rem;
+    padding: 8px 22px;
+    border: 2px solid #ccc;
+    border-radius: 50px;
+    background: transparent;
+    color: #bbb;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+
+  .btn-break-skip:hover { color: var(--outline); border-color: var(--outline); background: #f5f5f5; }
+
+  /* session timer pill in top-right */
+  #sessionPill {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    background: white;
+    border: 2px solid var(--outline);
+    border-radius: 50px;
+    padding: 4px 14px;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.75rem;
+    color: var(--outline);
+    box-shadow: 3px 3px 0 var(--outline);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.3s;
+  }
+
+  #sessionPill.warning { background: #fff3cd; border-color: var(--orange); color: var(--orange); animation: pulseWarn 1s ease-in-out infinite; }
+
+  @keyframes pulseWarn {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.06); }
+  }
+</style>
+</head>
+<body>
+
+<h1>🐍 Snakey Snake!</h1>
+<div class="subtitle">🍎 Eat! Grow! Win! 🏆</div>
+
+<div class="hud">
+  <div class="hud-item" id="scoreCard">
+    <span class="hud-label">⭐ Score</span>
+    <span class="hud-value" id="score">0</span>
+  </div>
+  <div class="hud-item" id="levelCard">
+    <span class="hud-label">🚀 Level</span>
+    <span class="hud-value" id="level">1</span>
+  </div>
+  <div class="hud-item" id="bestCard">
+    <span class="hud-label">🏆 Best</span>
+    <span class="hud-value" id="best">0</span>
+  </div>
+  <div class="hud-item" id="appleCard">
+    <span class="hud-label">🍎 Apples</span>
+    <span class="hud-value" id="appleCount">0</span>
+  </div>
+</div>
+
+<!-- Full-screen confetti canvas -->
+<canvas id="confettiCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:999;display:none;"></canvas>
+
+<!-- Milestone celebration banner -->
+<div id="milestoneBanner" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);z-index:1000;background:white;border:4px solid #3a2a1a;border-radius:24px;box-shadow:8px 8px 0 #3a2a1a;padding:20px 40px;text-align:center;pointer-events:none;transition:transform 0.35s cubic-bezier(0.175,0.885,0.32,1.4);">
+  <span id="bannerEmoji" style="font-size:3.5rem;display:block;animation:spinPop 0.5s ease-out;">🎊</span>
+  <span id="bannerText" style="font-family:'Fredoka One',cursive;font-size:2rem;color:#3a2a1a;display:block;margin-top:4px;-webkit-text-stroke:1.5px #3a2a1a;">20 Apples!</span>
+  <span id="bannerSub" style="font-family:'Nunito',sans-serif;font-size:0.9rem;font-weight:800;color:#888;display:block;margin-top:4px;">Snakey is getting big! 🐍</span>
+</div>
+
+<!-- Session timer pill -->
+<div id="sessionPill">⏱️ <span id="sessionTime">0:00</span></div>
+
+<!-- Take-a-break full-screen overlay -->
+<div id="breakScreen">
+  <div class="break-clouds" id="breakClouds"></div>
+  <div class="break-emoji-row">🌤️ 😴 ☁️ 🌈 😌</div>
+  <div class="break-title">Time for a Break!</div>
+  <div class="break-card">
+    <p>
+      🕐 You've been playing for <strong>5 minutes!</strong><br>
+      🧘 Stretch your arms & back!<br>
+      👀 Look away from the screen!<br>
+      💧 Drink some water! 🥤
+    </p>
+  </div>
+  <div class="break-timer-wrap">
+    <span class="break-timer-label">BREAK ENDS IN</span>
+    <span id="breakCountdown">30</span>
+    <div class="break-progress"><div id="breakProgressBar"></div></div>
+  </div>
+  <button class="btn-break-skip" id="breakSkipBtn">I already stretched! Skip ➜</button>
+  <div class="break-session-info" id="breakSessionInfo">Session: 5:00</div>
+</div>
+
+<div class="arena">
+  <canvas id="c"></canvas>
+
+  <!-- Start -->
+  <div class="overlay" id="startScreen">
+    <div class="overlay-emoji">🐍</div>
+    <div class="overlay-title">Snakey Snake!</div>
+    <div class="overlay-sub">
+      🕹️ Arrow keys or WASD to move<br>
+      🍎 Eat apples to grow bigger!<br>
+      ⭐ Grab stars for bonus points!<br>
+      ❌ Don't hit the walls or yourself!
+    </div>
+    <button class="btn" id="startBtn">▶ Let's Play!</button>
+  </div>
+
+  <!-- Pause -->
+  <div class="overlay hidden" id="pauseScreen">
+    <div class="overlay-emoji">⏸️</div>
+    <div class="overlay-title">Taking a break?</div>
+    <button class="btn" id="resumeBtn">▶ Keep Going!</button>
+  </div>
+
+  <!-- Game Over -->
+  <div class="overlay hidden" id="gameOverScreen">
+    <div class="overlay-emoji" id="overEmoji">😢</div>
+    <div class="overlay-title danger">Oops! Game Over!</div>
+    <div class="final-score" id="finalScore">0</div>
+    <div class="new-best hidden" id="newBest">🎉 NEW RECORD! 🎉</div>
+    <button class="btn danger-btn" id="restartBtn">🔄 Try Again!</button>
+  </div>
+</div>
+
+<div class="controls-hint">⬆ ⬇ ⬅ ➡ or WASD &nbsp;|&nbsp; P = Pause</div>
+
+<script>
+const COLS = 25, ROWS = 25, CELL = 20;
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+canvas.width = COLS * CELL;
+canvas.height = ROWS * CELL;
+
+const $ = id => document.getElementById(id);
+const scoreEl=$('score'), levelEl=$('level'), bestEl=$('best'), appleCountEl=$('appleCount');
+const startScreen=$('startScreen'), pauseScreen=$('pauseScreen'), gameOverScreen=$('gameOverScreen');
+const finalScoreEl=$('finalScore'), newBestEl=$('newBest'), overEmoji=$('overEmoji');
+const confettiCanvas=$('confettiCanvas'), cctx=confettiCanvas.getContext('2d');
+const milestoneBanner=$('milestoneBanner');
+
+// ── Confetti system ─────────────────────────────────────────────
+const CONFETTI_COLORS=['#ff6eb4','#ffe347','#5dda5d','#4dc8ff','#c97fff','#ff8c42','#ff4f4f','#ffffff'];
+let confettiPieces=[], confettiActive=false, confettiTimer=null;
+
+function resizeCC(){ confettiCanvas.width=window.innerWidth; confettiCanvas.height=window.innerHeight; }
+window.addEventListener('resize', resizeCC); resizeCC();
+
+function launchConfetti(ms=3500){
+  confettiPieces=[]; confettiCanvas.style.display='block'; confettiActive=true;
+  for(let i=0;i<180;i++) spawnCP();
+  const trickle=setInterval(()=>{ if(confettiActive) for(let i=0;i<6;i++) spawnCP(); },80);
+  clearTimeout(confettiTimer);
+  confettiTimer=setTimeout(()=>{
+    confettiActive=false; clearInterval(trickle);
+    setTimeout(()=>{ confettiCanvas.style.display='none'; confettiPieces=[]; },2000);
+  },ms);
+  requestAnimationFrame(tickCC);
+}
+function spawnCP(){
+  const shapes=['rect','circle','ribbon'];
+  confettiPieces.push({
+    x:Math.random()*window.innerWidth, y:-10-Math.random()*200,
+    w:8+Math.random()*10, h:5+Math.random()*8,
+    color:CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)],
+    rot:Math.random()*Math.PI*2, rotSpeed:(Math.random()-0.5)*0.2,
+    vx:(Math.random()-0.5)*3, vy:2+Math.random()*4,
+    shape:shapes[Math.floor(Math.random()*shapes.length)],
+    wobble:Math.random()*Math.PI*2, wobbleSpeed:0.05+Math.random()*0.1, opacity:1,
+  });
+}
+function tickCC(){
+  cctx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+  confettiPieces=confettiPieces.filter(p=>p.y<confettiCanvas.height+20&&p.opacity>0);
+  confettiPieces.forEach(p=>{
+    p.wobble+=p.wobbleSpeed; p.x+=p.vx+Math.sin(p.wobble)*1.2; p.y+=p.vy;
+    p.rot+=p.rotSpeed; p.vy=Math.min(p.vy+0.05,7);
+    if(p.y>confettiCanvas.height*0.85) p.opacity-=0.02;
+    cctx.save(); cctx.globalAlpha=p.opacity; cctx.translate(p.x,p.y); cctx.rotate(p.rot);
+    cctx.fillStyle=p.color; cctx.strokeStyle='rgba(0,0,0,0.15)'; cctx.lineWidth=0.5;
+    if(p.shape==='circle'){ cctx.beginPath();cctx.arc(0,0,p.w/2,0,Math.PI*2);cctx.fill();cctx.stroke(); }
+    else if(p.shape==='ribbon'){ cctx.beginPath();cctx.ellipse(0,0,p.w/2,p.h/4,0,0,Math.PI*2);cctx.fill();cctx.stroke(); }
+    else { cctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);cctx.strokeRect(-p.w/2,-p.h/2,p.w,p.h); }
+    cctx.restore();
+  });
+  if(confettiPieces.length>0||confettiActive) requestAnimationFrame(tickCC);
+  else confettiCanvas.style.display='none';
+}
+
+// ── Milestone banners ────────────────────────────────────────────
+const MILESTONES={
+  20:{emoji:'🎊',text:'20 Apples!',sub:'Snakey is getting big! 🐍'},
+  40:{emoji:'🌟',text:'40 Apples!',sub:'Incredible! Keep going! 🔥'},
+  60:{emoji:'🏆',text:'60 Apples!',sub:"You're a Snake Legend! 👑"},
+  80:{emoji:'💥',text:'80 Apples!',sub:'UNSTOPPABLE!! 🚀'},
+  100:{emoji:'👑',text:'100 Apples!',sub:'MASTER OF SNAKEY!! 🌈'},
+};
+let shownMilestones=new Set();
+
+function showMilestoneBanner(n){
+  const m=MILESTONES[n];
+  $('bannerEmoji').textContent=m.emoji; $('bannerText').textContent=m.text; $('bannerSub').textContent=m.sub;
+  milestoneBanner.style.transform='translate(-50%,-50%) scale(1)';
+  launchConfetti(4000);
+  setTimeout(()=>{ milestoneBanner.style.transform='translate(-50%,-50%) scale(0)'; },2800);
+}
+
+// Palette
+const COLORS = {
+  bg: '#f0fff4',
+  gridLine: '#d4f5d4',
+  snakeHead: '#ff6eb4',
+  snakeColors: ['#ff6eb4','#ff8c42','#ffe347','#5dda5d','#4dc8ff','#c97fff'],
+  outline: '#3a2a1a',
+  apple: '#ff4f4f',
+  appleLeaf: '#5dda5d',
+  star: '#ffe347',
+  starOutline: '#ff8c42',
+  eye: '#3a2a1a',
+  eyeWhite: '#ffffff',
+  cheek: 'rgba(255,110,180,0.4)',
+};
+
+let snake, dir, nextDir, food, superFood, score, level, best, frames, state, particles, appleCount;
+
+function init() {
+  const mid = Math.floor(COLS/2);
+  snake = [
+    {x:mid,   y:Math.floor(ROWS/2)},
+    {x:mid-1, y:Math.floor(ROWS/2)},
+    {x:mid-2, y:Math.floor(ROWS/2)},
+  ];
+  dir = {x:1,y:0};
+  nextDir = {x:1,y:0};
+  score = 0; level = 1; frames = 0; appleCount = 0;
+  superFood = null;
+  particles = [];
+  shownMilestones = new Set();
+  best = parseInt(localStorage.getItem('snakeBestKiddy')||'0');
+  bestEl.textContent = best;
+  appleCountEl.textContent = 0;
+  updateHUD();
+  placeFood();
+  state = 'idle';
+}
+
+function calcSpeed() { return Math.max(55, 140 - (level-1)*10); }
+
+function updateHUD() {
+  scoreEl.textContent = score;
+  levelEl.textContent = level;
+  bestEl.textContent = best;
+}
+
+function popHUD(cardId, valId) {
+  const card = $(cardId), val = $(valId);
+  val.classList.add('pop');
+  card.classList.add('pop-card');
+  setTimeout(()=>{ val.classList.remove('pop'); card.classList.remove('pop-card'); }, 250);
+}
+
+function placeFood() {
+  const occupied = new Set(snake.map(s=>`${s.x},${s.y}`));
+  let pos;
+  do { pos={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}; }
+  while(occupied.has(`${pos.x},${pos.y}`));
+  food = pos;
+}
+
+function placeSuperFood() {
+  const occupied = new Set([...snake.map(s=>`${s.x},${s.y}`),`${food.x},${food.y}`]);
+  let pos;
+  do { pos={x:Math.floor(Math.random()*COLS),y:Math.floor(Math.random()*ROWS)}; }
+  while(occupied.has(`${pos.x},${pos.y}`));
+  superFood = {x:pos.x, y:pos.y, ttl:120};
+}
+
+// Particle burst
+function spawnParticles(gx, gy, color) {
+  const cx = gx*CELL+CELL/2, cy = gy*CELL+CELL/2;
+  for(let i=0;i<10;i++) {
+    const angle = Math.random()*Math.PI*2;
+    const speed = 1.5+Math.random()*3;
+    particles.push({
+      x:cx, y:cy,
+      vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed,
+      life:1, color,
+      size: 4+Math.random()*4,
+    });
+  }
+}
+
+function updateParticles() {
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    p.vy += 0.1;
+    p.life -= 0.04;
+    p.vx *= 0.95;
+  });
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.fillStyle = p.color;
+    ctx.strokeStyle = COLORS.outline;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size*p.life, 0, Math.PI*2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+function step() {
+  dir = nextDir;
+  const head = {x: snake[0].x+dir.x, y: snake[0].y+dir.y};
+
+  if(head.x<0||head.x>=COLS||head.y<0||head.y>=ROWS) return endGame();
+  if(snake.slice(1).some(s=>s.x===head.x&&s.y===head.y)) return endGame();
+
+  snake.unshift(head);
+
+  let ate = false;
+  if(head.x===food.x && head.y===food.y) {
+    score += 10*level;
+    ate = true;
+    appleCount++;
+    appleCountEl.textContent = appleCount;
+    popHUD('appleCard','appleCount');
+    spawnParticles(food.x, food.y, COLORS.apple);
+    placeFood();
+    popHUD('scoreCard','score');
+    // Check milestones (every 20 apples)
+    if(appleCount % 20 === 0 && MILESTONES[appleCount] && !shownMilestones.has(appleCount)){
+      shownMilestones.add(appleCount);
+      setTimeout(()=>showMilestoneBanner(appleCount), 100);
+    }
+    if(score >= 50*level*level) { level++; popHUD('levelCard','level'); if(!superFood) placeSuperFood(); }
+    if(!superFood && Math.random()<0.12) placeSuperFood();
+  } else if(superFood && head.x===superFood.x && head.y===superFood.y) {
+    score += 50*level;
+    ate = true;
+    spawnParticles(superFood.x, superFood.y, COLORS.star);
+    superFood = null;
+    popHUD('scoreCard','score');
+  } else {
+    snake.pop();
+  }
+
+  if(superFood) { superFood.ttl--; if(superFood.ttl<=0) superFood=null; }
+
+  if(score>best) { best=score; localStorage.setItem('snakeBestKiddy',best); bestEl.textContent=best; popHUD('bestCard','best'); }
+  updateHUD();
+}
+
+function drawRoundRect(x,y,w,h,r,fill,stroke,sw=2) {
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  if(fill) { ctx.fillStyle=fill; ctx.fill(); }
+  if(stroke) { ctx.strokeStyle=stroke; ctx.lineWidth=sw; ctx.stroke(); }
+}
+
+function draw() {
+  // Background
+  ctx.fillStyle = COLORS.bg;
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  // Checkerboard-lite grid
+  for(let x=0;x<COLS;x++) for(let y=0;y<ROWS;y++) {
+    if((x+y)%2===0) {
+      ctx.fillStyle = 'rgba(0,180,80,0.06)';
+      ctx.fillRect(x*CELL,y*CELL,CELL,CELL);
+    }
+  }
+
+  // Super food — star shape
+  if(superFood) {
+    const pulse = 0.7+0.3*Math.sin(Date.now()*0.012);
+    const sx = superFood.x*CELL+CELL/2, sy = superFood.y*CELL+CELL/2;
+    const urgency = superFood.ttl/120;
+    ctx.save();
+    ctx.translate(sx,sy);
+    ctx.rotate(Date.now()*0.003);
+    ctx.scale(pulse, pulse);
+    drawStar(0,0,7,4, COLORS.star, COLORS.starOutline);
+    ctx.restore();
+    // fading ring when about to disappear
+    if(urgency < 0.3) {
+      ctx.save();
+      ctx.globalAlpha = (1-urgency/0.3)*0.5;
+      ctx.strokeStyle = COLORS.red;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sx,sy,12,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Food — cute apple
+  {
+    const ax = food.x*CELL, ay = food.y*CELL;
+    const pulse = 0.9+0.1*Math.sin(Date.now()*0.007);
+    ctx.save();
+    ctx.translate(ax+CELL/2, ay+CELL/2);
+    ctx.scale(pulse,pulse);
+    // apple body
+    ctx.fillStyle = COLORS.apple;
+    ctx.strokeStyle = COLORS.outline;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 2, 7, 0, Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    // leaf
+    ctx.fillStyle = COLORS.appleLeaf;
+    ctx.beginPath();
+    ctx.ellipse(2,-5,3,2,-0.5,0,Math.PI*2);
+    ctx.fill(); ctx.stroke();
+    // stem
+    ctx.strokeStyle = COLORS.outline;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(0,2); ctx.lineTo(0,-5); ctx.stroke();
+    // shine
+    ctx.fillStyle='rgba(255,255,255,0.5)';
+    ctx.beginPath(); ctx.ellipse(-2,-1,2,1.2,-0.5,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Snake
+  snake.forEach((seg, i) => {
+    const sx = seg.x*CELL, sy = seg.y*CELL;
+    const colorIdx = i % COLORS.snakeColors.length;
+    const col = COLORS.snakeColors[colorIdx];
+    const m = i===0 ? 1 : 2;
+    const r = i===0 ? 8 : 6;
+
+    drawRoundRect(sx+m, sy+m, CELL-m*2, CELL-m*2, r, col, COLORS.outline, 2);
+
+    // Head details
+    if(i===0) {
+      const cx = sx+CELL/2, cy = sy+CELL/2;
+      const ex = dir.x, ey = dir.y;
+      const [ox,oy] = ex!==0 ? [0,1]:[1,0];
+
+      // cheeks
+      ctx.save();
+      ctx.fillStyle = COLORS.cheek;
+      ctx.beginPath(); ctx.arc(cx+ox*5+ex*2, cy+oy*5+ey*2, 3, 0, Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc(cx-ox*5+ex*2, cy-oy*5+ey*2, 3, 0, Math.PI*2); ctx.fill();
+      ctx.restore();
+
+      // eyes
+      const eyeOff = 3;
+      [1,-1].forEach(side => {
+        const ex2 = cx + ox*side*eyeOff + ex*4;
+        const ey2 = cy + oy*side*eyeOff + ey*4;
+        ctx.fillStyle = COLORS.eyeWhite;
+        ctx.strokeStyle = COLORS.outline;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(ex2,ey2,2.5,0,Math.PI*2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = COLORS.eye;
+        ctx.beginPath(); ctx.arc(ex2+ex*0.5,ey2+ey*0.5,1.2,0,Math.PI*2); ctx.fill();
+      });
+
+      // tongue
+      const tx = cx+ex*9, ty = cy+ey*9;
+      ctx.save();
+      ctx.strokeStyle = '#ff2255';
+      ctx.lineWidth = 1.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx+ex*6, cy+ey*6);
+      ctx.lineTo(tx, ty);
+      const fork = 3;
+      ctx.moveTo(tx,ty); ctx.lineTo(tx+oy*fork+ex*2, ty+ox*fork+ey*2);
+      ctx.moveTo(tx,ty); ctx.lineTo(tx-oy*fork+ex*2, ty-ox*fork+ey*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // Particles
+  updateParticles();
+  drawParticles();
+}
+
+function drawStar(cx,cy,outerR,innerR,fill,stroke) {
+  ctx.beginPath();
+  for(let i=0;i<10;i++) {
+    const r = i%2===0 ? outerR : innerR;
+    const angle = (i/10)*Math.PI*2 - Math.PI/2;
+    if(i===0) ctx.moveTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r);
+    else ctx.lineTo(cx+Math.cos(angle)*r, cy+Math.sin(angle)*r);
+  }
+  ctx.closePath();
+  ctx.fillStyle=fill; ctx.fill();
+  ctx.strokeStyle=stroke; ctx.lineWidth=2; ctx.stroke();
+}
+
+function gameTickLoop() {
+  if(state!=='playing') return;
+  frames++;
+  const sp = calcSpeed();
+  if(frames % Math.max(1, Math.round(sp/16)) === 0) step();
+  draw();
+  requestAnimationFrame(gameTickLoop);
+}
+
+function startGame() {
+  init();
+  startScreen.classList.add('hidden');
+  gameOverScreen.classList.add('hidden');
+  state='playing';
+  frames=0;
+  requestAnimationFrame(gameTickLoop);
+}
+
+function endGame() {
+  state='gameover';
+  finalScoreEl.textContent = score;
+  const isNewBest = score >= best && score > 0;
+  newBestEl.classList.toggle('hidden', !isNewBest);
+  overEmoji.textContent = score > 50 ? '😮' : '😢';
+  gameOverScreen.classList.remove('hidden');
+}
+
+function pause() {
+  if(state==='playing') {
+    state='paused';
+    pauseScreen.classList.remove('hidden');
+  } else if(state==='paused') {
+    state='playing';
+    pauseScreen.classList.add('hidden');
+    requestAnimationFrame(gameTickLoop);
+  }
+}
+
+const keyMap = {
+  ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0},
+  w:{x:0,y:-1},s:{x:0,y:1},a:{x:-1,y:0},d:{x:1,y:0},
+  W:{x:0,y:-1},S:{x:0,y:1},A:{x:-1,y:0},D:{x:1,y:0},
+};
+
+document.addEventListener('keydown', e => {
+  if(e.key==='p'||e.key==='P') { if(state==='playing'||state==='paused') pause(); return; }
+  const d = keyMap[e.key];
+  if(!d) return;
+  e.preventDefault();
+  if(d.x !== -dir.x || d.y !== -dir.y) nextDir=d;
+});
+
+$('startBtn').addEventListener('click', startGame);
+$('resumeBtn').addEventListener('click', pause);
+$('restartBtn').addEventListener('click', startGame);
+
+// ── Session timer & break system ─────────────────────────────────
+const BREAK_AFTER_MS   = 5 * 60 * 1000;  // 5 minutes
+const BREAK_WARN_MS    = 4.5 * 60 * 1000; // warn at 4:30
+const BREAK_DURATION_S = 30;              // 30-second break countdown
+
+let sessionStart   = Date.now();
+let breakShown     = false;
+let breakCountSec  = BREAK_DURATION_S;
+let breakInterval  = null;
+let sessionInterval= null;
+
+const sessionPill      = $('sessionPill');
+const sessionTimeEl    = $('sessionTime');
+const breakScreen      = $('breakScreen');
+const breakCountdownEl = $('breakCountdown');
+const breakProgressBar = $('breakProgressBar');
+const breakSessionInfo = $('breakSessionInfo');
+
+function fmtTime(ms){
+  const s = Math.floor(ms/1000);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+function spawnBreakClouds(){
+  const container = $('breakClouds');
+  container.innerHTML='';
+  const emojis=['☁️','🌤️','⛅','🌈'];
+  for(let i=0;i<8;i++){
+    const el=document.createElement('span');
+    el.className='cloud';
+    el.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+    el.style.top=`${5+Math.random()*80}%`;
+    el.style.fontSize=`${1.5+Math.random()*2.5}rem`;
+    el.style.animationDuration=`${10+Math.random()*15}s`;
+    el.style.animationDelay=`${-Math.random()*20}s`;
+    container.appendChild(el);
+  }
+}
+
+function showBreakScreen(){
+  // pause the game if playing
+  if(state==='playing') pause();
+  breakShown=true;
+  breakCountSec=BREAK_DURATION_S;
+  breakCountdownEl.textContent=breakCountSec;
+  breakProgressBar.style.width='100%';
+  breakSessionInfo.textContent=`Session: ${fmtTime(Date.now()-sessionStart)}`;
+  spawnBreakClouds();
+  breakScreen.classList.add('show');
+
+  clearInterval(breakInterval);
+  breakInterval=setInterval(()=>{
+    breakCountSec--;
+    breakCountdownEl.textContent=breakCountSec;
+    breakCountdownEl.classList.add('tick');
+    setTimeout(()=>breakCountdownEl.classList.remove('tick'),200);
+    breakProgressBar.style.width=`${(breakCountSec/BREAK_DURATION_S)*100}%`;
+    if(breakCountSec<=0) dismissBreak();
+  },1000);
+}
+
+function dismissBreak(){
+  clearInterval(breakInterval);
+  breakScreen.classList.remove('show');
+  // reset session clock
+  sessionStart=Date.now();
+  breakShown=false;
+  sessionPill.classList.remove('warning');
+}
+
+$('breakSkipBtn').addEventListener('click', dismissBreak);
+
+// Tick session clock every second
+sessionInterval=setInterval(()=>{
+  const elapsed=Date.now()-sessionStart;
+  sessionTimeEl.textContent=fmtTime(elapsed);
+
+  // Warning glow at 4:30
+  if(elapsed>=BREAK_WARN_MS && !breakShown){
+    sessionPill.classList.add('warning');
+  }
+
+  // Show break at 5:00
+  if(elapsed>=BREAK_AFTER_MS && !breakShown){
+    showBreakScreen();
+  }
+},1000);
+
+init();
+draw();
+</script>
+</body>
+</html>
